@@ -12,6 +12,7 @@ class ShortUrlCreate(ShortUrlBase):
 class ShortUrl(ShortUrlBase):
     id: int
     visits: int
+    short: str
 
     class Config:
         orm_mode = True

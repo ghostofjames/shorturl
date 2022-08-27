@@ -1,11 +1,7 @@
-import pprint
-from wsgiref.util import request_uri
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from hashids import Hashids
-from sqladmin import Admin, ModelAdmin
 from sqlalchemy.orm import Session
-from fastapi_security import FastAPISecurity, User
 
 import models
 import schemas
@@ -20,35 +16,6 @@ hashids = Hashids(salt=SALT, min_length=MIN_LENGTH)
 
 app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
-admin = Admin(app, engine)
-
-security = FastAPISecurity()
-security.init_basic_auth(ADMIN)
-
-
-class ShortUrlAdmin(ModelAdmin, model=models.ShortUrl):
-    def is_accessible(self, request) -> bool:
-        if request.user:
-            return True
-        else:
-            return False
-
-    name = "Short URL"
-    name_plural = "Short URLs"
-    icon = "fa-solid fa-link"
-    can_create = True
-    can_edit = True
-    can_delete = True
-    can_view_details = True
-    column_list = [models.ShortUrl.id, models.ShortUrl.url, models.ShortUrl.visits]  # type: ignore
-
-
-admin.register_model(ShortUrlAdmin)
-
-
-@app.get("/adminpage/")
-def admin_page(user: User = Depends(security.authenticated_user_or_401)):
-    return user
 
 
 @app.get("/")
@@ -84,3 +51,17 @@ def redirect(shorturl: str, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_shorturl)
     return db_shorturl.url
+
+
+# from sqladmin import Admin, ModelAdmin
+# admin = Admin(app, engine)
+# class ShortUrlAdmin(ModelAdmin, model=models.ShortUrl):
+#     name = "Short URL"
+#     name_plural = "Short URLs"
+#     icon = "fa-solid fa-link"
+#     can_create = True
+#     can_edit = True
+#     can_delete = True
+#     can_view_details = True
+#     column_list = [models.ShortUrl.id, models.ShortUrl.url, models.ShortUrl.visits]  # type: ignore
+# admin.add_view(ShortUrlAdmin)

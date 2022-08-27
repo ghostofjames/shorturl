@@ -7,6 +7,7 @@ class ShortUrl(Base):
     __tablename__ = "shorturls"
 
     id = Column(Integer, primary_key=True, index=True)
+    short = Column(String)
     url = Column(String)
     visits = Column(Integer)
 
