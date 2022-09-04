@@ -29,7 +29,8 @@
 
         $.post({
           contentType: "application/json; charset=utf-8",
-          url: "http://127.0.0.1:8000/shorten/",
+          // url: "http://127.0.0.1:8000/shorten/",
+          url: "/shorten/",
           data: JSON.stringify({ target_url: $("#target-url").val() }),
         }).done(function (data) {
           console.log(data);
