@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from hashids import Hashids
 from pydantic import HttpUrl
 from sqlmodel import Session
 
-
+from api import crud
 from api import models
 from api.database import get_session
 from api.config import get_settings
@@ -20,41 +20,22 @@ router = APIRouter()
     summary="Shorten a new URL",
     response_description="A short url which will redirect to the target URL",
 )
-# def shorten_url(
-#     target_url: HttpUrl = Body(..., embed=True), db: Session = Depends(get_session)
-# ):
 def shorten_url(target_url: models.ShortUrlCreate, db: Session = Depends(get_session)):
-    """
-    Shorten a URL
+    short_url = crud.create_shorturl(target_url, db)
 
-    - **target_url**: a valid HttpUrl
-    """
-    db_shorturl = models.ShortUrl(target_url=target_url.target_url)
-
-    db.add(db_shorturl)
-    db.commit()
-
-    shorturl = hashids.encode(db_shorturl.id)
-    db_shorturl.short = shorturl
-    db.commit()
-
-    return models.ShortUrlLink(link=f"{get_settings().BASE_URL}/{db_shorturl.short}")
+    return models.ShortUrlLink(link=f"{get_settings().BASE_URL}/{short_url.short}")
 
 
 @router.get("/info", response_model=list[models.ShortUrl], tags=["info"])
 def read_shorturls(db: Session = Depends(get_session)):
-    shorturls = db.query(models.ShortUrl).all()
-    return shorturls
+    return crud.read_all_urls(db)
 
 
 @router.get("/info/{shorturl}", response_model=models.ShortUrlRead, tags=["info"])
 def shorturl_info(shorturl: str, db: Session = Depends(get_session)):
-    decoded = hashids.decode(shorturl)
-    if not decoded:
-        raise HTTPException(status_code=404)
-    id = decoded[0]
 
-    db_shorturl = db.get(models.ShortUrl, id)
+    db_shorturl = crud.read_url(shorturl, db)
+
     if not db_shorturl:
         raise HTTPException(status_code=404, detail="Short URL not found")
 
@@ -77,13 +58,9 @@ def redirect(shorturl: str, db: Session = Depends(get_session)):
     """
     if shorturl == "favicon.ico":
         raise HTTPException(status_code=404)
-    decoded = hashids.decode(shorturl)
-    if not decoded:
-        raise HTTPException(status_code=404)
 
-    id = decoded[0]
+    db_shorturl = crud.read_url(shorturl, db)
 
-    db_shorturl = db.get(models.ShortUrl, id)
     if not db_shorturl:
         raise HTTPException(status_code=404, detail="Short URL not found")
 
